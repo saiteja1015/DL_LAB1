@@ -19,13 +19,12 @@ batch_size = 128
 nb_classes = 10
 nb_epoch = 30
 
-#loading the dataset
+
 dataset = pd.read_csv("C:/Users/vinee/Downloads/heart.csv", header=None).values
- #print(dataset)C:\Users\vinee\Downloads
 import numpy as np
 X_train, X_test, Y_train, Y_test = train_test_split(dataset[1:,0:13], dataset[1:,13],
                                                     test_size=0.25, random_state=87)
-##Data normalization
+#Normalizing the Data
 X_train = X_train.astype(np.float)
 X_test = X_test.astype(np.float)
 X_train /= 255
