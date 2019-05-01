@@ -25,8 +25,13 @@ warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
 lemmatizer = WordNetLemmatizer()
 set_random_seed(123)
 random.seed(123)
-train = pd.read_csv("train.csv", header=None).values
-test = pd.read_csv("test.csv", header=None).values
+
+train = pd.read_csv("train.tsv", sep="\t")
+test = pd.read_csv("test.tsv", sep="\t")
+
+train.head()
+train['Phrase'][143]
+
 
 def clean_sentences(df):
     reviews = []
@@ -41,19 +46,15 @@ def clean_sentences(df):
     return (reviews)
 
 
-import nltk
-
-nltk.download('all')
-# cleaned reviews for both train and test set retrieved
 train_sentences = clean_sentences(train)
 test_sentences = clean_sentences(test)
 print(len(train_sentences))
 print(len(test_sentences))
 target = train.Sentiment.values
-y_target = to_categorical(target)
-num_classes = y_target.shape[1]
-X_train, X_val, y_train, y_val = train_test_split(train_sentences, y_target, test_size=0.2, stratify=y_target)
+y = to_categorical(target)
+num_classes = y.shape[1]
 
+X_train, X_val, y_train, y_val = train_test_split(train_sentences, y, test_size=0.3, stratify=y)
 unique_words = set()
 len_max = 0
 
@@ -68,7 +69,6 @@ print(len(list(unique_words)))
 print(len_max)
 for x in tqdm(X_train[1:10]):
     print(x)
-
 tokenizer = Tokenizer(num_words=len(list(unique_words)))
 tokenizer.fit_on_texts(list(X_train))
 X_train = tokenizer.texts_to_sequences(X_train)
@@ -78,27 +78,17 @@ X_train = sequence.pad_sequences(X_train, maxlen=len_max)
 X_val = sequence.pad_sequences(X_val, maxlen=len_max)
 X_test = sequence.pad_sequences(X_test, maxlen=len_max)
 print(X_train.shape, X_val.shape, X_test.shape)
+
+early_stopping = EarlyStopping(min_delta=0.001, mode='max', monitor='val_acc', patience=2)
+callback = [early_stopping]
+
 model = Sequential()
 model.add(Embedding(len(list(unique_words)), 300, input_length=len_max))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(MaxPooling1D(5))
-model.add(Conv1D(128, 5, activation='relu'))
-# model.add(MaxPooling1D(35))
-model.add(Flatten())
+model.add(LSTM(32, dropout=0.3, recurrent_dropout=0.5, return_sequences=True))
+model.add(LSTM(64, dropout=0.4, recurrent_dropout=0.5, return_sequences=False))
 model.add(Dense(100, activation='relu'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.2))
 model.add(Dense(num_classes, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.005), metrics=['accuracy'])
 model.summary()
-history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=4, batch_size=256, verbose=1)
-import matplotlib.pyplot as plt
-
-
-epoch_count = range(1, len(history.history['loss']) + 1)
-
-plt.plot(epoch_count, history.history['loss'], 'r--')
-plt.plot(epoch_count, history.history['val_loss'], 'b-')
-plt.legend(['Training Loss', 'Validation Loss'])
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.show()
+history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=3, batch_size=66, verbose=1)
