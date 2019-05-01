@@ -11,8 +11,6 @@ from keras.utils import np_utils
 from keras.callbacks import TensorBoard
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
-#setting the batch size and epochs
 from sklearn.model_selection import train_test_split
 
 batch_size = 128
@@ -42,14 +40,14 @@ model.summary()
 #Tensorboard log generation for graphs
 tensorboard = TensorBoard(log_dir="logs/{}",histogram_freq=0, write_graph=True, write_images=True)
 
-#fitting the model
+#model fitting
 history=model.fit(X_train, Y_Train, nb_epoch=nb_epoch, batch_size=batch_size,callbacks=[tensorboard])
 
-#predicting the accuracy of the model
+#predicting accuracy
 score = model.evaluate(X_test, Y_Test, verbose=1)
 print('Loss: %.2f, Accuracy: %.2f' % (score[0], score[1]))
 
-#plotting the loss
+#plotting loss
 plt.plot(history.history['loss'])
 plt.title('model loss')
 plt.ylabel('loss')
